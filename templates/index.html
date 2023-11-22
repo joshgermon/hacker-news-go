@@ -1,81 +1,125 @@
 <!doctype html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <title>Hacker News</title>
-    <script
-      src="https://unpkg.com/htmx.org@1.9.8"
-      integrity="sha384-rgjA7mptc2ETQqXoYC3/zJvkU7K/aP44Y+z7xQuJiVnB/422P/Ak+F/AqFR7E4Wr"
-      crossorigin="anonymous"
-    ></script>
+    <script src="https://unpkg.com/htmx.org@1.9.8"
+        integrity="sha384-rgjA7mptc2ETQqXoYC3/zJvkU7K/aP44Y+z7xQuJiVnB/422P/Ak+F/AqFR7E4Wr"
+        crossorigin="anonymous"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
     <style>
-      /* Base styles */
-      html,
-      body {
-        margin: 0 auto;
-        max-width: 640px;
-        font-family: Inter, sans-serif;
-        background-color: rgb(15, 23, 42);
-        color: rgb(148, 163, 184);
-      }
-      h1,
-      h2,
-      h3,
-      h4,
-      h5 {
-        letter-spacing: -0.025em;
-        font-weight: 600;
-        line-height: 1.5rem;
-        margin: 0;
-        color: rgb(226, 232, 240);
-      }
-      h1 {
-        font-weight: bold;
-      }
-      p {
-        font-size: 1rem;
-        line-height: 1.75rem;
-      }
+        /* Base styles */
+        html,
+        body {
+            margin: 0 auto;
+            max-width: 640px;
+            font-family: Inter, sans-serif;
+            background-color: rgb(15, 23, 42);
+            color: rgb(148, 163, 184);
+        }
 
-      /* Story styles */
-      .page-title {
-        padding: 1rem 0;
-        text-align: center;
-      }
-      .story-card {
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        margin-bottom: 0.5rem;
-      }
-      .story-card:hover {
-        background-color: #1e293b80;
-      }
-      .story-card > h2 {
-        font-weight: 600;
-        margin: 0;
-        font-size: 1.15rem;
-      }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5 {
+            letter-spacing: -0.025em;
+            font-weight: 600;
+            line-height: 1.75rem;
+            margin: 0;
+            color: rgb(226, 232, 240);
+        }
+
+        h1 {
+            font-weight: bold;
+        }
+
+        p {
+            font-size: 1rem;
+            line-height: 1.75rem;
+            margin: 0.333rem 0;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .link {
+            color: rgb(14, 165, 233);
+            font-size: 0.85rem;
+        }
+
+        /* Story styles */
+        .page-title {
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .story-card {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .story-card:hover {
+            background-color: #1e293b80;
+        }
+
+        .story-card h2 {
+            font-weight: 600;
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .story-card .info-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+        }
+
+        .story-url {
+            opacity: 0.5;
+            display: block;
+            padding: 0.5rem 0;
+        }
+
+        .subtitle {
+            display: block;
+            font-size: 0.85rem;
+            padding: 0 0 0.5rem 0;
+        }
     </style>
-  </head>
-  <body>
-    <div>
-      <h1 class="page-title">Top Stories</h1>
-      <div class="story-list">
-        {{ range .Hits }}
-        <article class="story-card">
-          <span>{{ .CreatedAt }}</span>
-          <h2>{{ .Title }}</h2>
-          <p>{{ .LinkDescription }}</p>
-          <p>{{ .Author }}</p>
-        </article>
-        {{ end }}
-      </div>
-    </div>
-  </body>
+</head>
+
+<body>
+    <main>
+        <h1 class="page-title">Top Stories</h1>
+        <section class="story-list">
+            {{ range . }}
+            <article class="story-card">
+                <span class="subtitle">{{ .TimeAgo }}</span>
+                <a href="{{ .URL }}">
+                    <h2>{{ .Title }}</h2>
+                </a>
+                <a href="{{ .URL }}" class="story-url">{{ .URL }}</a>
+                <div class="info-bar">
+                    <div class="">
+                        <a class="link" href="{{ .URL }}">Read story</a>
+                        <span> • </span>
+                        <span>{{ .NumComments }} Comments</span>
+                    </div>
+                    <div>
+                        <span>{{ .Author }}</span>
+                    </div>
+                </div>
+            </article>
+            {{ end }}
+        </section>
+    </main>
+</body>
+
 </html>
