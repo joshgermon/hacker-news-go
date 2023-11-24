@@ -6,7 +6,11 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"slices"
+	"strconv"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type HNStorySearchResult struct {
@@ -125,13 +129,21 @@ type HNCommentHit struct {
 	Points      any       `json:"points,omitempty"`
 	StoryID     int       `json:"story_id,omitempty"`
 	StoryTitle  string    `json:"story_title,omitempty"`
+	Title       string    `json:"title,omitempty"`
 	StoryURL    string    `json:"story_url,omitempty"`
 	UpdatedAt   time.Time `json:"updated_at,omitempty"`
 	Children    []int     `json:"children,omitempty"`
+	Tags        []string  `json:"_tags"`
 }
 
-func getStoryComments(storyID int) []HNCommentHit {
-	endpoint := fmt.Sprintf("https://hn.algolia.com/api/v1/search?tags=comment,story_%d", storyID)
+type Story struct {
+	Title    string
+	Author   string
+	Comments []Comment
+}
+
+func getStory(storyID int) Story {
+	endpoint := fmt.Sprintf("https://hn.algolia.com/api/v1/search?tags=story_%d&hitsPerPage=100", storyID)
 	resp, err := http.Get(endpoint)
 	if err != nil {
 		log.Fatal(err)
@@ -144,29 +156,90 @@ func getStoryComments(storyID int) []HNCommentHit {
 		log.Fatal(err)
 	}
 
-	var parentComments []HNCommentHit
+	story := Story{}
 	for _, hit := range result.Hits {
+		if slices.Contains(hit.Tags, "story") {
+			story.Title = hit.Title
+			story.Author = hit.Author
+		}
 		// Is a parent comment
 		if hit.ParentID == storyID {
-			parentComments = append(parentComments, hit)
+			story.Comments = append(story.Comments, transformComment(hit))
 		}
 	}
 
-	return parentComments
+	return story
+}
+
+type Comment struct {
+	ID       string
+	Text     template.HTML
+	Author   string
+	Children []Comment
+}
+
+func transformComment(comment HNCommentHit) Comment {
+	return Comment{
+		Text:   template.HTML(comment.CommentText),
+		Author: comment.Author,
+	}
+}
+
+type HNItem struct {
+  Author    string `json:"author"`
+  Children  []HNItem `json:"children"`
+  CreatedAt string `json:"created_at"`
+  CreatedAtI int `json:"created_at_i"`
+  ID        int `json:"id"`
+  Options   []string `json:"options"`
+  ParentID  int `json:"parent_id"`
+  Points    interface{} `json:"points"`
+  StoryID   int `json:"story_id"`
+  Text      string `json:"text"`
+  Title     string `json:"title"`
+  Type      string `json:"type"`
+  URL       interface{} `json:"url"`
+}
+
+func getItem(storyID int) HNItem {
+	endpoint := fmt.Sprintf("https://hn.algolia.com/api/v1/items/%d", storyID)
+	resp, err := http.Get(endpoint)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var result HNItem
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		log.Fatal(err)
+	}
+    return result
 }
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	r := chi.NewRouter()
+
+	r.Get("/post/{id}", func(w http.ResponseWriter, r *http.Request) {
+		storyID, err := strconv.Atoi(chi.URLParam(r, "id"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		tmpl := template.Must(template.ParseFiles("templates/post.html"))
+		data := getItem(storyID)
+		b, err := json.Marshal(data)
+		if err != nil {
+			fmt.Println("error:", err)
+		}
+		log.Printf("comments %s", b)
+		tmpl.Execute(w, data)
+	})
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl := template.Must(template.ParseFiles("templates/index.html"))
 		data := getTopStories()
 		tmpl.Execute(w, data)
 	})
 
-	// http.HandleFunc("/comments", func(w http.ResponseWriter, r *http.Request) {
-	// 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
-	// 	data := getTopStories()
-	// 	tmpl.Execute(w, data)
-	// })
-
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", r)
 }

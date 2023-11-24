@@ -18,8 +18,8 @@
       /* Base styles */
       html,
       body {
-        margin: 0 auto;
-        max-width: 640px;
+        margin: 1rem auto;
+        max-width: 860px;
         font-family: Inter, sans-serif;
         background-color: rgb(15, 23, 42);
         color: rgb(148, 163, 184);
@@ -45,6 +45,7 @@
         font-size: 1rem;
         line-height: 1.75rem;
         margin: 0.333rem 0;
+        color: rgb(226, 232, 240);
       }
 
       a {
@@ -63,26 +64,19 @@
         text-align: center;
       }
 
-      .story-card {
+      .comment {
         padding: 1rem 1.5rem;
         border-radius: 12px;
-        margin-bottom: 1.5rem;
       }
 
-      .story-card:hover {
+      .comment:hover {
         background-color: #1e293b80;
       }
 
-      .story-card h2 {
+      .comment h2 {
         font-weight: 600;
         margin: 0;
         font-size: 1.25rem;
-      }
-
-      .story-card .info-bar {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.85rem;
       }
 
       .story-url {
@@ -99,32 +93,18 @@
     </style>
   </head>
 
+  {{define "comment"}}
+  <div class="comment">
+    <p>{{ .Text }}</p>
+    <span class="subtitle">{{ .Author }}</span>
+    {{range .Children}} {{template "comment" .}} {{end}}
+  </div>
+  {{ end }}
+
   <body>
     <main>
-      <h1 class="page-title">Top Stories</h1>
-      <section class="story-list">
-        {{ range . }}
-        <article class="story-card">
-          <span class="subtitle">{{ .TimeAgo }}</span>
-          <a href="{{ .URL }}">
-            <h2>{{ .Title }}</h2>
-          </a>
-          <a href="{{ .URL }}" class="story-url">{{ .URL }}</a>
-          <div class="info-bar">
-            <div class="">
-              <a class="link" href="{{ .URL }}">Read story</a>
-              <span> • </span>
-              <a href="/post/{{.StoryID}}"
-                ><span>{{ .NumComments }} Comments</span></a
-              >
-            </div>
-            <div>
-              <span>{{ .Author }}</span>
-            </div>
-          </div>
-        </article>
-        {{ end }}
-      </section>
+      <h1 class="page-title">{{ .Title}}</h1>
+      <div>{{range .Children}} {{template "comment" .}} {{end}}</div>
     </main>
   </body>
 </html>
