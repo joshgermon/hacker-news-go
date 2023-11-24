@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"slices"
 	"strconv"
 	"time"
 
@@ -32,7 +31,7 @@ type StoryText struct {
 
 type HNStoryHit struct {
 	Tags        []string  `json:"_tags"`
-	Author      string    `json:"author"`
+	Author      string    `jsrn:"author"`
 	Children    []int     `json:"children"`
 	CreatedAt   time.Time `json:"created_at"`
 	CreatedAtI  int       `json:"created_at_i"`
@@ -107,83 +106,6 @@ func getTopStories() []HNStory {
 	return topStories
 }
 
-// Comment's
-
-type HNCommentSearchResult struct {
-	Hits         []HNCommentHit `json:"hits,omitempty"`
-	HitsPerPage  int            `json:"hitsPerPage,omitempty"`
-	NbHits       int            `json:"nbHits,omitempty"`
-	NbPages      int            `json:"nbPages,omitempty"`
-	Page         int            `json:"page,omitempty"`
-	Params       string         `json:"params,omitempty"`
-	Query        string         `json:"query,omitempty"`
-	ServerTimeMS int            `json:"serverTimeMS,omitempty"`
-}
-
-type HNCommentHit struct {
-	Author      string    `json:"author,omitempty"`
-	CommentText string    `json:"comment_text,omitempty"`
-	CreatedAt   time.Time `json:"created_at,omitempty"`
-	ObjectID    string    `json:"objectID,omitempty"`
-	ParentID    int       `json:"parent_id,omitempty"`
-	Points      any       `json:"points,omitempty"`
-	StoryID     int       `json:"story_id,omitempty"`
-	StoryTitle  string    `json:"story_title,omitempty"`
-	Title       string    `json:"title,omitempty"`
-	StoryURL    string    `json:"story_url,omitempty"`
-	UpdatedAt   time.Time `json:"updated_at,omitempty"`
-	Children    []int     `json:"children,omitempty"`
-	Tags        []string  `json:"_tags"`
-}
-
-type Story struct {
-	Title    string
-	Author   string
-	Comments []Comment
-}
-
-func getStory(storyID int) Story {
-	endpoint := fmt.Sprintf("https://hn.algolia.com/api/v1/search?tags=story_%d&hitsPerPage=100", storyID)
-	resp, err := http.Get(endpoint)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	var result HNCommentSearchResult
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	story := Story{}
-	for _, hit := range result.Hits {
-		if slices.Contains(hit.Tags, "story") {
-			story.Title = hit.Title
-			story.Author = hit.Author
-		}
-		// Is a parent comment
-		if hit.ParentID == storyID {
-			story.Comments = append(story.Comments, transformComment(hit))
-		}
-	}
-
-	return story
-}
-
-type Comment struct {
-	ID       string
-	Text     template.HTML
-	Author   string
-	Children []Comment
-}
-
-func transformComment(comment HNCommentHit) Comment {
-	return Comment{
-		Text:   template.HTML(comment.CommentText),
-		Author: comment.Author,
-	}
-}
 
 type HNItem struct {
   Author    string `json:"author"`
@@ -227,11 +149,6 @@ func main() {
 		}
 		tmpl := template.Must(template.ParseFiles("templates/post.html"))
 		data := getItem(storyID)
-		b, err := json.Marshal(data)
-		if err != nil {
-			fmt.Println("error:", err)
-		}
-		log.Printf("comments %s", b)
 		tmpl.Execute(w, data)
 	})
 
